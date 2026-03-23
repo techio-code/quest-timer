@@ -1,0 +1,2339 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>クエストタイマー | 冒険しながら集中しよう</title>
+  <meta name="description" content="ポモドーロタイマーをRPG化！作業がクエストに変わる。レベルアップ・装備・実績で集中が楽しくなる！">
+  <meta property="og:title" content="クエストタイマー | 冒険しながら集中しよう">
+  <meta property="og:description" content="ポモドーロタイマーをRPG化！作業がクエストに変わる。レベルアップ・装備・実績で集中が楽しくなる！">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="クエストタイマー | 冒険しながら集中しよう">
+  <meta name="twitter:description" content="ポモドーロタイマーをRPG化！作業がクエストに変わる。レベルアップ・装備・実績で集中が楽しくなる！">
+  <!-- GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-D9X3M3V53D"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-D9X3M3V53D');
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #0a0a1a;
+      --card-bg: #1a1a2e;
+      --primary: #ffd700;
+      --secondary: #50c878;
+      --warning: #e74c3c;
+      --blue: #4a9eff;
+      --text: #e0e0e0;
+      --text-sub: #888;
+      --border: rgba(255,215,0,0.3);
+    }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      image-rendering: pixelated;
+    }
+
+    /* ========== Starry background ========== */
+    .stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .star {
+      position: absolute;
+      background: #fff;
+      width: 2px;
+      height: 2px;
+    }
+    .star.small { width: 1px; height: 1px; }
+    .star.twinkle {
+      animation: twinkle 2s ease-in-out infinite alternate;
+    }
+    .star.twinkle2 {
+      animation: twinkle 3s ease-in-out infinite alternate-reverse;
+    }
+    @keyframes twinkle {
+      0% { opacity: 0.3; }
+      100% { opacity: 1; }
+    }
+
+    .app {
+      max-width: 440px;
+      margin: 0 auto;
+      padding: 16px 20px 40px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Fade-in animation */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeIn 0.5s ease forwards;
+    }
+    @keyframes fadeIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in:nth-child(2) { animation-delay: 0.05s; }
+    .fade-in:nth-child(3) { animation-delay: 0.1s; }
+    .fade-in:nth-child(4) { animation-delay: 0.15s; }
+    .fade-in:nth-child(5) { animation-delay: 0.2s; }
+    .fade-in:nth-child(6) { animation-delay: 0.25s; }
+
+    /* Pixel card */
+    .pixel-card {
+      background: var(--card-bg);
+      border: 3px solid var(--primary);
+      border-radius: 4px;
+      box-shadow:
+        inset 0 0 0 1px var(--bg),
+        inset 0 0 0 3px rgba(255,215,0,0.3),
+        0 0 15px rgba(255,215,0,0.1);
+    }
+
+    /* ========== Header ========== */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0 20px;
+    }
+    .header-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary);
+    }
+    .header-title span {
+      font-size: 20px;
+    }
+    .settings-btn {
+      background: var(--card-bg);
+      border: 2px solid var(--primary);
+      color: var(--text-sub);
+      width: 40px;
+      height: 40px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .settings-btn:hover {
+      color: var(--primary);
+      border-color: var(--primary);
+      box-shadow: 0 0 8px rgba(255,215,0,0.3);
+    }
+
+    /* ========== Status Card ========== */
+    .status-card {
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .status-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .title-badge {
+      background: var(--card-bg);
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border: 2px solid var(--primary);
+      border-radius: 2px;
+    }
+    .level-text {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 16px;
+      color: var(--primary);
+    }
+    .exp-bar-container {
+      margin-bottom: 12px;
+    }
+    .exp-bar-bg {
+      height: 16px;
+      background: #333;
+      border: 2px solid #666;
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+    }
+    .exp-bar-fill {
+      height: 100%;
+      background:
+        linear-gradient(90deg, #50c878, #3da85c),
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 8px,
+          rgba(0,0,0,0.2) 8px,
+          rgba(0,0,0,0.2) 10px
+        );
+      background-blend-mode: normal;
+      border-radius: 0;
+      transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+      position: relative;
+    }
+    .exp-bar-fill::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 8px,
+        rgba(0,0,0,0.2) 8px,
+        rgba(0,0,0,0.2) 10px
+      );
+    }
+    .exp-text {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 4px;
+      font-family: 'Press Start 2P', monospace;
+    }
+    .quest-stats {
+      display: flex;
+      gap: 16px;
+      margin-top: 14px;
+    }
+    .quest-stat {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      background: rgba(255,215,0,0.05);
+      border: 1px solid rgba(255,215,0,0.15);
+      border-radius: 4px;
+    }
+    .quest-stat-value {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 18px;
+      color: var(--secondary);
+    }
+    .quest-stat-label {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 4px;
+    }
+
+    /* ========== Timer ========== */
+    .timer-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .timer-ring-wrapper {
+      position: relative;
+      width: 280px;
+      height: 280px;
+    }
+    @media (max-width: 380px) {
+      .timer-ring-wrapper {
+        width: 240px;
+        height: 240px;
+      }
+    }
+    .timer-ring-wrapper svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .ring-bg {
+      fill: none;
+      stroke: #2a2a3e;
+      stroke-width: 6;
+    }
+    .ring-progress {
+      fill: none;
+      stroke: var(--secondary);
+      stroke-width: 6;
+      stroke-linecap: butt;
+      transition: stroke-dashoffset 0.5s ease;
+    }
+    .ring-progress.break-mode {
+      stroke: var(--blue);
+    }
+    /* Corner decorations for timer */
+    .timer-ring-wrapper::before,
+    .timer-ring-wrapper::after {
+      content: '';
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: var(--primary);
+      z-index: 2;
+    }
+    .timer-ring-wrapper::before {
+      top: 8px;
+      left: 8px;
+      box-shadow: calc(100% - 22px) 0 0 0 var(--primary);
+    }
+    .timer-ring-wrapper::after {
+      bottom: 8px;
+      left: 8px;
+      box-shadow: calc(100% - 22px) 0 0 0 var(--primary);
+    }
+    .timer-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .timer-state {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .timer-state.active {
+      animation: textBlink 1.2s step-end infinite;
+    }
+    @keyframes textBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .timer-display {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 48px;
+      line-height: 1;
+      color: var(--text);
+    }
+    @media (max-width: 380px) {
+      .timer-display {
+        font-size: 36px;
+      }
+    }
+    .timer-session {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 8px;
+      font-family: 'Press Start 2P', monospace;
+    }
+
+    /* ========== Controls ========== */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .btn-main {
+      width: 100%;
+      max-width: 280px;
+      padding: 16px 32px;
+      border: 3px solid var(--primary);
+      border-radius: 4px;
+      background: linear-gradient(180deg, #ffd700, #b8960f);
+      color: #0a0a1a;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s;
+      font-family: 'Noto Sans JP', sans-serif;
+      min-height: 52px;
+      box-shadow: 0 4px 0 #7a6008;
+      position: relative;
+    }
+    .btn-main:hover {
+      filter: brightness(1.1);
+    }
+    .btn-main:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #7a6008;
+    }
+    .btn-main.running {
+      background: linear-gradient(180deg, #ff8c42, #cc6a28);
+      border-color: #ff8c42;
+      box-shadow: 0 4px 0 #8a4510;
+    }
+    .btn-main.running:active {
+      box-shadow: 0 2px 0 #8a4510;
+    }
+    .btn-sub {
+      background: transparent;
+      border: 2px solid var(--warning);
+      color: var(--warning);
+      padding: 10px 24px;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Noto Sans JP', sans-serif;
+      min-height: 44px;
+    }
+    .btn-sub:hover {
+      background: rgba(231,76,60,0.1);
+    }
+
+    /* ========== Equipment Card ========== */
+    .equipment-card {
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--primary);
+    }
+    .equip-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .equip-slot {
+      background: rgba(255,215,0,0.05);
+      border: 1px solid rgba(255,215,0,0.15);
+      border-radius: 4px;
+      padding: 14px;
+      text-align: center;
+    }
+    .equip-icon {
+      margin-bottom: 10px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .equip-name {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 2px;
+      color: #ffffff;
+      position: relative;
+      z-index: 1;
+    }
+    .equip-effect {
+      font-size: 11px;
+      color: #999999;
+    }
+    .equip-effect.active {
+      color: var(--secondary);
+    }
+    .equip-change-btn {
+      display: block;
+      margin: 14px auto 0;
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: underline;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+
+    /* ========== Pixel Art Icons ========== */
+    .pixel-sword {
+      width: 32px;
+      height: 32px;
+      display: inline-block;
+      background: transparent;
+      box-shadow:
+        /* blade */
+        12px 0 0 #ffd700,
+        16px 0 0 #ffd700,
+        20px 0 0 #ffd700,
+        8px 4px 0 #ffd700,
+        12px 4px 0 #fff8dc,
+        16px 4px 0 #ffd700,
+        4px 8px 0 #ffd700,
+        8px 8px 0 #fff8dc,
+        12px 8px 0 #ffd700,
+        /* guard */
+        0 12px 0 #8b4513,
+        4px 12px 0 #a0522d,
+        8px 12px 0 #ffd700,
+        12px 12px 0 #a0522d,
+        16px 12px 0 #8b4513,
+        /* grip */
+        8px 16px 0 #8b4513,
+        8px 20px 0 #a0522d,
+        8px 24px 0 #8b4513,
+        /* pommel */
+        4px 28px 0 #ffd700,
+        8px 28px 0 #ffd700,
+        12px 28px 0 #ffd700;
+      transform: scale(0.7);
+    }
+    .pixel-shield {
+      width: 32px;
+      height: 32px;
+      display: inline-block;
+      background: transparent;
+      box-shadow:
+        /* top */
+        8px 0 0 #4a9eff,
+        12px 0 0 #4a9eff,
+        16px 0 0 #4a9eff,
+        20px 0 0 #4a9eff,
+        /* row 2 */
+        4px 4px 0 #4a9eff,
+        8px 4px 0 #6ab4ff,
+        12px 4px 0 #6ab4ff,
+        16px 4px 0 #6ab4ff,
+        20px 4px 0 #6ab4ff,
+        24px 4px 0 #4a9eff,
+        /* row 3 */
+        4px 8px 0 #4a9eff,
+        8px 8px 0 #6ab4ff,
+        12px 8px 0 #ffd700,
+        16px 8px 0 #ffd700,
+        20px 8px 0 #6ab4ff,
+        24px 8px 0 #4a9eff,
+        /* row 4 */
+        4px 12px 0 #4a9eff,
+        8px 12px 0 #6ab4ff,
+        12px 12px 0 #ffd700,
+        16px 12px 0 #ffd700,
+        20px 12px 0 #6ab4ff,
+        24px 12px 0 #4a9eff,
+        /* row 5 */
+        8px 16px 0 #4a9eff,
+        12px 16px 0 #6ab4ff,
+        16px 16px 0 #6ab4ff,
+        20px 16px 0 #4a9eff,
+        /* row 6 */
+        8px 20px 0 #4a9eff,
+        12px 20px 0 #4a9eff,
+        16px 20px 0 #4a9eff,
+        20px 20px 0 #4a9eff,
+        /* bottom */
+        12px 24px 0 #4a9eff,
+        16px 24px 0 #4a9eff;
+      transform: scale(0.7);
+    }
+
+    /* ========== Equipment Modal ========== */
+    .equip-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 10, 26, 0.9);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .equip-modal-overlay.show {
+      display: flex;
+    }
+    .equip-modal {
+      width: 90%;
+      max-width: 400px;
+      max-height: 80vh;
+      overflow-y: auto;
+      border-radius: 4px;
+      padding: 24px;
+      background: var(--card-bg);
+      border: 3px solid var(--primary);
+      box-shadow:
+        inset 0 0 0 1px var(--bg),
+        inset 0 0 0 3px rgba(255,215,0,0.3),
+        0 0 30px rgba(255,215,0,0.15);
+    }
+    .equip-modal h3 {
+      font-size: 16px;
+      margin-bottom: 16px;
+      text-align: center;
+      color: var(--primary);
+    }
+    .equip-category {
+      margin-bottom: 16px;
+    }
+    .equip-category-title {
+      font-size: 13px;
+      color: var(--primary);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .equip-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-bottom: 6px;
+      border: 1px solid transparent;
+    }
+    .equip-option:hover {
+      background: rgba(255,215,0,0.06);
+    }
+    .equip-option.selected {
+      border-color: var(--primary);
+      background: rgba(255,215,0,0.1);
+    }
+    .equip-option.locked {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .equip-option-icon {
+      font-size: 24px;
+    }
+    .equip-option-info {
+      flex: 1;
+    }
+    .equip-option-name {
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .equip-option-effect {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+    .equip-option-unlock {
+      font-size: 10px;
+      color: var(--primary);
+    }
+    .equip-modal-close {
+      display: block;
+      margin: 16px auto 0;
+      padding: 10px 32px;
+      border: 3px solid var(--primary);
+      border-radius: 4px;
+      background: linear-gradient(180deg, #ffd700, #b8960f);
+      color: #0a0a1a;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      min-height: 44px;
+      box-shadow: 0 3px 0 #7a6008;
+    }
+    .equip-modal-close:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #7a6008;
+    }
+
+    /* ========== Achievements ========== */
+    .achievements-card {
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .badge-scroll {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .badge-scroll::-webkit-scrollbar {
+      height: 4px;
+    }
+    .badge-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255,215,0,0.2);
+      border-radius: 2px;
+    }
+    .badge-item {
+      flex: 0 0 auto;
+      text-align: center;
+      width: 72px;
+    }
+    .badge-circle {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin: 0 auto 6px;
+      border: 2px solid;
+      transition: all 0.3s;
+    }
+    .badge-circle.unlocked {
+      background: var(--card-bg);
+      border-color: var(--primary);
+      box-shadow: 0 0 12px rgba(255,215,0,0.3);
+    }
+    .badge-circle.locked {
+      background: #2a2a3e;
+      border-color: #444;
+    }
+    .badge-label {
+      font-size: 10px;
+      color: var(--text-sub);
+      line-height: 1.3;
+    }
+
+    /* ========== Settings Modal ========== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 10, 26, 0.9);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.show {
+      display: flex;
+    }
+    .modal {
+      width: 90%;
+      max-width: 400px;
+      border-radius: 4px;
+      padding: 28px 24px;
+      background: var(--card-bg);
+      border: 3px solid var(--primary);
+      box-shadow:
+        inset 0 0 0 1px var(--bg),
+        inset 0 0 0 3px rgba(255,215,0,0.3),
+        0 0 30px rgba(255,215,0,0.15);
+    }
+    .modal h2 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      text-align: center;
+      color: var(--primary);
+    }
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255,215,0,0.1);
+    }
+    .setting-row:last-child {
+      border-bottom: none;
+    }
+    .setting-label {
+      font-size: 14px;
+    }
+    .setting-input {
+      width: 80px;
+      padding: 8px 10px;
+      border-radius: 4px;
+      border: 2px solid rgba(255,215,0,0.3);
+      background: #0a0a1a;
+      color: var(--text);
+      font-size: 14px;
+      text-align: center;
+      font-family: 'Press Start 2P', monospace;
+      cursor: pointer;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+    .setting-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      width: 48px;
+      height: 28px;
+      cursor: pointer;
+    }
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #333;
+      border-radius: 4px;
+      border: 2px solid #666;
+      transition: background 0.3s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 3px;
+      top: 3px;
+      background: #888;
+      border-radius: 2px;
+      transition: transform 0.3s, background 0.3s;
+    }
+    .toggle input:checked + .toggle-slider {
+      background: rgba(255,215,0,0.2);
+      border-color: var(--primary);
+    }
+    .toggle input:checked + .toggle-slider::before {
+      transform: translateX(20px);
+      background: var(--primary);
+    }
+    .btn-danger {
+      width: 100%;
+      margin-top: 16px;
+      padding: 12px;
+      border: 2px solid var(--warning);
+      background: transparent;
+      color: var(--warning);
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      min-height: 44px;
+    }
+    .btn-danger:hover {
+      background: rgba(231,76,60,0.1);
+    }
+    .btn-close-modal {
+      width: 100%;
+      margin-top: 10px;
+      padding: 12px;
+      border: 3px solid var(--primary);
+      background: linear-gradient(180deg, #ffd700, #b8960f);
+      color: #0a0a1a;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      min-height: 44px;
+      box-shadow: 0 3px 0 #7a6008;
+    }
+    .btn-close-modal:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #7a6008;
+    }
+
+    /* ========== Level up overlay ========== */
+    .levelup-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      background: rgba(10, 10, 26, 0.92);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    .levelup-overlay.show {
+      display: flex;
+    }
+    .levelup-text {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 24px;
+      color: var(--primary);
+      text-align: center;
+      animation: levelPulse 0.6s ease;
+      text-shadow: 0 0 20px rgba(255,215,0,0.5);
+    }
+    .levelup-sub {
+      color: var(--text-sub);
+      margin-top: 12px;
+      font-size: 16px;
+      text-align: center;
+    }
+    .levelup-new-equip {
+      margin-top: 16px;
+      color: var(--secondary);
+      font-size: 14px;
+      text-align: center;
+    }
+    @keyframes levelPulse {
+      0% { transform: scale(0.5); opacity: 0; }
+      60% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* ========== Confetti (pixel style) ========== */
+    .confetti-piece {
+      position: fixed;
+      width: 8px;
+      height: 8px;
+      border-radius: 0;
+      z-index: 310;
+      pointer-events: none;
+      animation: confettiFall 1.5s ease forwards;
+    }
+    @keyframes confettiFall {
+      0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+      100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+    }
+
+    /* ========== Gold flash on quest complete ========== */
+    @keyframes goldFlash {
+      0% { background: rgba(255,215,0,0); }
+      15% { background: rgba(255,215,0,0.15); }
+      100% { background: rgba(255,215,0,0); }
+    }
+    .gold-flash {
+      animation: goldFlash 0.8s ease;
+    }
+
+    @keyframes glowPulse {
+      0% { box-shadow: 0 0 0 rgba(255,215,0,0); }
+      50% { box-shadow: 0 0 30px rgba(255,215,0,0.4), 0 0 60px rgba(80,200,120,0.2); }
+      100% { box-shadow: 0 0 0 rgba(255,215,0,0); }
+    }
+    .glow {
+      animation: glowPulse 1s ease;
+    }
+
+    /* Notification toast */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-80px);
+      background: var(--card-bg);
+      border: 2px solid var(--primary);
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-size: 14px;
+      z-index: 400;
+      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      white-space: nowrap;
+      box-shadow: 0 0 15px rgba(255,215,0,0.2);
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ========== Gold flash overlay ========== */
+    .flash-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 250;
+    }
+
+    /* ========== Battle Scene ========== */
+    .battle-scene {
+      padding: 0;
+      margin-bottom: 20px;
+      overflow: hidden;
+      position: relative;
+    }
+    .battle-arena {
+      position: relative;
+      width: 100%;
+      height: 200px;
+      overflow: hidden;
+    }
+    @media (max-width: 380px) {
+      .battle-arena { height: 160px; }
+    }
+    /* Sky with stars */
+    .battle-bg-sky {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 55%;
+      background: #0a0a2e;
+    }
+    .battle-star {
+      position: absolute;
+      background: #fff;
+      width: 2px; height: 2px;
+    }
+    .battle-star.s { width: 1px; height: 1px; }
+    .battle-star.blink { animation: twinkle 2s ease-in-out infinite alternate; }
+    /* Ground */
+    .battle-bg-ground {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 45%;
+      background: linear-gradient(180deg, #1a4a1a 0%, #2d5a2d 40%, #1e3e1e 100%);
+    }
+    .battle-bg-ground::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: repeating-linear-gradient(90deg, #3a7a3a 0px, #3a7a3a 8px, #2d5a2d 8px, #2d5a2d 16px);
+    }
+    .battle-bg-ground::after {
+      content: '';
+      position: absolute;
+      top: 4px; left: 0; right: 0;
+      height: 4px;
+      background: repeating-linear-gradient(90deg, #2d5a2d 0px, #2d5a2d 8px, #3a7a3a 8px, #3a7a3a 16px);
+    }
+
+    /* Hero pixel art - using ::before on a container */
+    .battle-hero-wrap {
+      position: absolute;
+      bottom: 40px;
+      left: 15%;
+      z-index: 5;
+    }
+    .battle-hero {
+      width: 4px; height: 4px;
+      position: relative;
+    }
+    .battle-hero::before {
+      content: '';
+      position: absolute;
+      width: 4px; height: 4px;
+      background: transparent;
+      box-shadow:
+        /* Hair */
+        4px -20px 0 #8B4513, 8px -20px 0 #8B4513, 12px -20px 0 #8B4513,
+        0px -16px 0 #8B4513, 4px -16px 0 #8B4513, 8px -16px 0 #8B4513, 12px -16px 0 #8B4513, 16px -16px 0 #8B4513,
+        /* Face */
+        0px -12px 0 #FFCC99, 4px -12px 0 #FFCC99, 8px -12px 0 #FFCC99, 12px -12px 0 #FFCC99, 16px -12px 0 #FFCC99,
+        4px -8px 0 #000, 12px -8px 0 #000, 0px -8px 0 #FFCC99, 8px -8px 0 #FFCC99, 16px -8px 0 #FFCC99,
+        /* Body - armor */
+        4px -4px 0 #4a9eff, 8px -4px 0 #6ab4ff, 12px -4px 0 #4a9eff,
+        0px 0px 0 #4a9eff, 4px 0px 0 #6ab4ff, 8px 0px 0 #ffd700, 12px 0px 0 #6ab4ff, 16px 0px 0 #4a9eff,
+        4px 4px 0 #4a9eff, 8px 4px 0 #4a9eff, 12px 4px 0 #4a9eff,
+        /* Arms */
+        -4px -4px 0 #FFCC99, 20px -4px 0 #FFCC99,
+        -4px 0px 0 #FFCC99, 20px 0px 0 #FFCC99,
+        /* Sword in right hand */
+        24px -4px 0 #aaa, 24px -8px 0 #ccc, 24px -12px 0 #ccc, 24px -16px 0 #ffd700,
+        /* Legs */
+        4px 8px 0 #2a2a5e, 12px 8px 0 #2a2a5e,
+        4px 12px 0 #8B4513, 12px 12px 0 #8B4513;
+    }
+
+    /* Hero idle bounce */
+    .battle-hero-wrap.idle {
+      animation: heroIdle 1.5s ease-in-out infinite;
+    }
+    @keyframes heroIdle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    /* Hero attack */
+    .battle-hero-wrap.attack {
+      animation: heroAttack 0.4s ease-in-out forwards;
+    }
+    @keyframes heroAttack {
+      0% { transform: translateX(0); }
+      40% { transform: translateX(80px); }
+      100% { transform: translateX(0); }
+    }
+    /* Hero victory */
+    .battle-hero-wrap.victory {
+      animation: heroVictory 0.6s ease infinite;
+    }
+    @keyframes heroVictory {
+      0%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-16px); }
+      50% { transform: translateY(-16px); }
+      80% { transform: translateY(0); }
+    }
+
+    /* Hero sitting (rest) - different pixel art */
+    .battle-hero.resting::before {
+      box-shadow:
+        /* Hair */
+        4px -12px 0 #8B4513, 8px -12px 0 #8B4513, 12px -12px 0 #8B4513,
+        0px -8px 0 #8B4513, 4px -8px 0 #8B4513, 8px -8px 0 #8B4513, 12px -8px 0 #8B4513, 16px -8px 0 #8B4513,
+        /* Face */
+        0px -4px 0 #FFCC99, 4px -4px 0 #FFCC99, 8px -4px 0 #FFCC99, 12px -4px 0 #FFCC99, 16px -4px 0 #FFCC99,
+        4px 0px 0 #000, 12px 0px 0 #000, 0px 0px 0 #FFCC99, 8px 0px 0 #FFCC99, 16px 0px 0 #FFCC99,
+        /* Body sitting */
+        4px 4px 0 #4a9eff, 8px 4px 0 #6ab4ff, 12px 4px 0 #4a9eff,
+        0px 8px 0 #4a9eff, 4px 8px 0 #6ab4ff, 8px 8px 0 #ffd700, 12px 8px 0 #6ab4ff, 16px 8px 0 #4a9eff,
+        /* Legs forward */
+        4px 12px 0 #2a2a5e, 8px 12px 0 #2a2a5e, 12px 12px 0 #2a2a5e,
+        4px 16px 0 #8B4513, 12px 16px 0 #8B4513;
+    }
+
+    /* ===== Monster pixel art containers ===== */
+    .battle-monster-wrap {
+      position: absolute;
+      bottom: 45px;
+      right: 18%;
+      z-index: 5;
+    }
+    .battle-monster {
+      width: 4px; height: 4px;
+      position: relative;
+    }
+
+    /* Monster idle sway */
+    .battle-monster-wrap.idle {
+      animation: monsterIdle 2s ease-in-out infinite;
+    }
+    @keyframes monsterIdle {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(6px); }
+    }
+    /* Monster hit - blink */
+    .battle-monster-wrap.hit {
+      animation: monsterHit 0.4s step-end forwards;
+    }
+    @keyframes monsterHit {
+      0% { opacity: 1; }
+      10% { opacity: 0; }
+      20% { opacity: 1; }
+      30% { opacity: 0; }
+      40% { opacity: 1; }
+      50% { opacity: 0; }
+      60% { opacity: 1; }
+      70% { opacity: 0; }
+      80% { opacity: 1; }
+      100% { opacity: 1; }
+    }
+    /* Monster defeat */
+    .battle-monster-wrap.defeat {
+      animation: monsterDefeat 1s ease forwards;
+    }
+    @keyframes monsterDefeat {
+      0% { transform: rotate(0deg) scale(1); opacity: 1; }
+      50% { transform: rotate(180deg) scale(0.6); opacity: 0.5; }
+      100% { transform: rotate(360deg) scale(0); opacity: 0; }
+    }
+    /* Monster appear */
+    .battle-monster-wrap.appear {
+      animation: monsterAppear 0.8s ease forwards;
+    }
+    @keyframes monsterAppear {
+      0% { transform: scale(0); opacity: 0; }
+      60% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* --- Slime (blue, round) --- */
+    .monster-slime::before {
+      content: '';
+      position: absolute;
+      width: 4px; height: 4px;
+      background: transparent;
+      box-shadow:
+        8px -16px 0 #5599ff, 12px -16px 0 #5599ff, 16px -16px 0 #5599ff,
+        4px -12px 0 #5599ff, 8px -12px 0 #88bbff, 12px -12px 0 #88bbff, 16px -12px 0 #88bbff, 20px -12px 0 #5599ff,
+        4px -8px 0 #5599ff, 8px -8px 0 #88bbff, 12px -8px 0 #fff, 16px -8px 0 #88bbff, 20px -8px 0 #5599ff,
+        0px -4px 0 #5599ff, 4px -4px 0 #5599ff, 8px -4px 0 #88bbff, 12px -4px 0 #88bbff, 16px -4px 0 #88bbff, 20px -4px 0 #5599ff, 24px -4px 0 #5599ff,
+        0px 0px 0 #3366cc, 4px 0px 0 #5599ff, 8px 0px 0 #5599ff, 12px 0px 0 #5599ff, 16px 0px 0 #5599ff, 20px 0px 0 #5599ff, 24px 0px 0 #3366cc,
+        4px 4px 0 #3366cc, 8px 4px 0 #3366cc, 12px 4px 0 #3366cc, 16px 4px 0 #3366cc, 20px 4px 0 #3366cc;
+    }
+
+    /* --- Bat (purple, wings) --- */
+    .monster-bat::before {
+      content: '';
+      position: absolute;
+      width: 4px; height: 4px;
+      background: transparent;
+      box-shadow:
+        /* Wings */
+        -12px -8px 0 #7744aa, -8px -8px 0 #9966cc, -4px -8px 0 #9966cc,
+        28px -8px 0 #9966cc, 32px -8px 0 #9966cc, 36px -8px 0 #7744aa,
+        -8px -4px 0 #7744aa, -4px -4px 0 #9966cc,
+        28px -4px 0 #9966cc, 32px -4px 0 #7744aa,
+        /* Body */
+        4px -12px 0 #7744aa, 8px -12px 0 #9966cc, 12px -12px 0 #9966cc, 16px -12px 0 #9966cc, 20px -12px 0 #7744aa,
+        4px -8px 0 #9966cc, 8px -8px 0 #bb88ee, 12px -8px 0 #bb88ee, 16px -8px 0 #bb88ee, 20px -8px 0 #9966cc,
+        4px -4px 0 #9966cc, 8px -4px 0 #ff0, 12px -4px 0 #bb88ee, 16px -4px 0 #ff0, 20px -4px 0 #9966cc,
+        8px 0px 0 #7744aa, 12px 0px 0 #cc3333, 16px 0px 0 #7744aa,
+        12px 4px 0 #7744aa;
+    }
+    .battle-monster-wrap.idle .monster-bat {
+      animation: batFlap 0.4s step-end infinite;
+    }
+    @keyframes batFlap {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    /* --- Golem (brown, big) --- */
+    .monster-golem::before {
+      content: '';
+      position: absolute;
+      width: 4px; height: 4px;
+      background: transparent;
+      box-shadow:
+        8px -24px 0 #8B6914, 12px -24px 0 #8B6914, 16px -24px 0 #8B6914, 20px -24px 0 #8B6914,
+        4px -20px 0 #8B6914, 8px -20px 0 #a07828, 12px -20px 0 #a07828, 16px -20px 0 #a07828, 20px -20px 0 #a07828, 24px -20px 0 #8B6914,
+        4px -16px 0 #8B6914, 8px -16px 0 #ff6600, 12px -16px 0 #a07828, 16px -16px 0 #a07828, 20px -16px 0 #ff6600, 24px -16px 0 #8B6914,
+        4px -12px 0 #8B6914, 8px -12px 0 #a07828, 12px -12px 0 #a07828, 16px -12px 0 #a07828, 20px -12px 0 #a07828, 24px -12px 0 #8B6914,
+        0px -8px 0 #8B6914, 4px -8px 0 #a07828, 8px -8px 0 #8B6914, 12px -8px 0 #a07828, 16px -8px 0 #8B6914, 20px -8px 0 #a07828, 24px -8px 0 #8B6914, 28px -8px 0 #8B6914,
+        0px -4px 0 #705010, 4px -4px 0 #8B6914, 8px -4px 0 #8B6914, 12px -4px 0 #8B6914, 16px -4px 0 #8B6914, 20px -4px 0 #8B6914, 24px -4px 0 #8B6914, 28px -4px 0 #705010,
+        4px 0px 0 #705010, 8px 0px 0 #8B6914, 12px 0px 0 #8B6914, 16px 0px 0 #8B6914, 20px 0px 0 #8B6914, 24px 0px 0 #705010,
+        4px 4px 0 #705010, 8px 4px 0 #705010, 16px 4px 0 #705010, 20px 4px 0 #705010;
+    }
+
+    /* --- Dragon (red, small) --- */
+    .monster-dragon::before {
+      content: '';
+      position: absolute;
+      width: 4px; height: 4px;
+      background: transparent;
+      box-shadow:
+        /* Horns */
+        4px -20px 0 #ffaa00, 20px -20px 0 #ffaa00,
+        /* Head */
+        8px -16px 0 #cc2222, 12px -16px 0 #cc2222, 16px -16px 0 #cc2222,
+        4px -12px 0 #cc2222, 8px -12px 0 #ff4444, 12px -12px 0 #ff4444, 16px -12px 0 #ff4444, 20px -12px 0 #cc2222,
+        4px -8px 0 #ff4444, 8px -8px 0 #fff, 12px -8px 0 #ff4444, 16px -8px 0 #fff, 20px -8px 0 #ff4444,
+        /* Body */
+        0px -4px 0 #cc2222, 4px -4px 0 #ff4444, 8px -4px 0 #ff4444, 12px -4px 0 #ff6666, 16px -4px 0 #ff4444, 20px -4px 0 #ff4444, 24px -4px 0 #cc2222,
+        4px 0px 0 #cc2222, 8px 0px 0 #ff4444, 12px 0px 0 #ffaa00, 16px 0px 0 #ff4444, 20px 0px 0 #cc2222,
+        /* Wings */
+        -8px -12px 0 #cc2222, -4px -8px 0 #ff4444, -8px -4px 0 #cc2222,
+        28px -12px 0 #cc2222, 28px -8px 0 #ff4444, 32px -4px 0 #cc2222,
+        /* Legs & tail */
+        4px 4px 0 #cc2222, 20px 4px 0 #cc2222,
+        24px 0px 0 #cc2222, 28px 4px 0 #cc2222;
+    }
+
+    /* Campfire for rest */
+    .battle-campfire-wrap {
+      position: absolute;
+      bottom: 35px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 4;
+      display: none;
+    }
+    .battle-campfire-wrap.show { display: block; }
+    .battle-campfire {
+      width: 4px; height: 4px;
+      position: relative;
+    }
+    .battle-campfire::before {
+      content: '';
+      position: absolute;
+      width: 4px; height: 4px;
+      background: transparent;
+      animation: campfireFlicker 0.5s step-end infinite;
+      box-shadow:
+        /* Logs */
+        -4px 8px 0 #8B4513, 0px 8px 0 #8B4513, 4px 8px 0 #a0522d, 8px 8px 0 #a0522d, 12px 8px 0 #8B4513, 16px 8px 0 #8B4513,
+        0px 12px 0 #8B4513, 4px 12px 0 #8B4513, 8px 12px 0 #8B4513, 12px 12px 0 #8B4513,
+        /* Fire */
+        4px 4px 0 #ff6600, 8px 4px 0 #ff4400,
+        4px 0px 0 #ff8800, 8px 0px 0 #ffaa00,
+        4px -4px 0 #ffcc00, 8px -4px 0 #ff8800,
+        8px -8px 0 #ffcc00,
+        4px -12px 0 #ffee44;
+    }
+    @keyframes campfireFlicker {
+      0% {
+        box-shadow:
+          -4px 8px 0 #8B4513, 0px 8px 0 #8B4513, 4px 8px 0 #a0522d, 8px 8px 0 #a0522d, 12px 8px 0 #8B4513, 16px 8px 0 #8B4513,
+          0px 12px 0 #8B4513, 4px 12px 0 #8B4513, 8px 12px 0 #8B4513, 12px 12px 0 #8B4513,
+          4px 4px 0 #ff6600, 8px 4px 0 #ff4400,
+          4px 0px 0 #ff8800, 8px 0px 0 #ffaa00,
+          4px -4px 0 #ffcc00, 8px -4px 0 #ff8800,
+          8px -8px 0 #ffcc00,
+          4px -12px 0 #ffee44;
+      }
+      50% {
+        box-shadow:
+          -4px 8px 0 #8B4513, 0px 8px 0 #8B4513, 4px 8px 0 #a0522d, 8px 8px 0 #a0522d, 12px 8px 0 #8B4513, 16px 8px 0 #8B4513,
+          0px 12px 0 #8B4513, 4px 12px 0 #8B4513, 8px 12px 0 #8B4513, 12px 12px 0 #8B4513,
+          4px 4px 0 #ff4400, 8px 4px 0 #ff6600,
+          0px 0px 0 #ff8800, 4px 0px 0 #ffaa00, 8px 0px 0 #ff6600,
+          4px -4px 0 #ff8800, 8px -4px 0 #ffcc00,
+          4px -8px 0 #ffee44,
+          8px -12px 0 #ffcc00;
+      }
+    }
+
+    /* Damage number popup */
+    .damage-num {
+      position: absolute;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 14px;
+      color: #ff4444;
+      z-index: 10;
+      pointer-events: none;
+      animation: damageFloat 0.8s ease-out forwards;
+      text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+    }
+    @keyframes damageFloat {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-40px); }
+    }
+
+    /* Battle message window */
+    .battle-message {
+      background: rgba(0,0,0,0.7);
+      border-top: 2px solid var(--primary);
+      padding: 10px 16px;
+      font-size: 13px;
+      color: var(--text);
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .battle-message-text {
+      display: inline;
+    }
+    .battle-message-cursor {
+      display: inline-block;
+      width: 8px; height: 2px;
+      background: var(--primary);
+      margin-left: 4px;
+      vertical-align: middle;
+      animation: msgCursor 0.6s step-end infinite;
+    }
+    @keyframes msgCursor {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* Victory text */
+    .battle-victory-text {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 12px;
+      color: var(--primary);
+      z-index: 15;
+      text-shadow: 0 0 10px rgba(255,215,0,0.6);
+      opacity: 0;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .battle-victory-text.show {
+      animation: victoryTextPop 1.5s ease forwards;
+    }
+    @keyframes victoryTextPop {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+      20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+      40% { transform: translate(-50%, -50%) scale(1); }
+      80% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Starry background -->
+  <div class="stars" id="stars"></div>
+
+  <!-- Gold flash overlay -->
+  <div class="flash-overlay" id="flashOverlay"></div>
+
+  <div class="app">
+    <!-- Header -->
+    <div class="header fade-in">
+      <div class="header-title"><span>&#9876;</span> Quest Timer</div>
+      <button class="settings-btn" id="settingsBtn" aria-label="設定">&#9881;</button>
+    </div>
+
+    <!-- Status Card -->
+    <div class="status-card pixel-card fade-in">
+      <div class="status-top">
+        <span class="title-badge" id="titleBadge">見習い冒険者</span>
+        <span class="level-text" id="levelText">Lv.1</span>
+      </div>
+      <div class="exp-bar-container">
+        <div class="exp-bar-bg">
+          <div class="exp-bar-fill" id="expBar" style="width: 0%"></div>
+        </div>
+        <div class="exp-text"><span id="expCurrent">0</span> / <span id="expMax">100</span> EXP</div>
+      </div>
+      <div class="quest-stats">
+        <div class="quest-stat">
+          <div class="quest-stat-value" id="dailyCount">0</div>
+          <div class="quest-stat-label">本日のクエスト</div>
+        </div>
+        <div class="quest-stat">
+          <div class="quest-stat-value" id="totalCount">0</div>
+          <div class="quest-stat-label">累計クエスト</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Battle Scene -->
+    <div class="battle-scene pixel-card fade-in" id="battleScene">
+      <div class="battle-arena" id="battleArena">
+        <div class="battle-bg-sky">
+          <div class="battle-star" style="left:10%;top:15%"></div>
+          <div class="battle-star blink" style="left:25%;top:30%"></div>
+          <div class="battle-star s" style="left:40%;top:10%"></div>
+          <div class="battle-star blink" style="left:55%;top:25%"></div>
+          <div class="battle-star s" style="left:70%;top:8%"></div>
+          <div class="battle-star" style="left:85%;top:20%"></div>
+          <div class="battle-star s blink" style="left:15%;top:40%"></div>
+          <div class="battle-star" style="left:60%;top:42%"></div>
+          <div class="battle-star s" style="left:80%;top:38%"></div>
+          <div class="battle-star blink" style="left:35%;top:45%"></div>
+        </div>
+        <div class="battle-bg-ground"></div>
+        <div class="battle-hero-wrap idle" id="heroWrap">
+          <div class="battle-hero" id="heroSprite"></div>
+        </div>
+        <div class="battle-monster-wrap idle" id="monsterWrap">
+          <div class="battle-monster monster-slime" id="monsterSprite"></div>
+        </div>
+        <div class="battle-campfire-wrap" id="campfireWrap">
+          <div class="battle-campfire"></div>
+        </div>
+        <div class="battle-victory-text" id="victoryText"></div>
+      </div>
+      <div class="battle-message">
+        <span class="battle-message-text" id="battleMsg">モンスターが現れた！</span>
+        <span class="battle-message-cursor"></span>
+      </div>
+    </div>
+
+    <!-- Timer -->
+    <div class="timer-section fade-in" id="timerCard">
+      <div class="timer-ring-wrapper">
+        <svg viewBox="0 0 280 280">
+          <circle class="ring-bg" cx="140" cy="140" r="130"/>
+          <circle class="ring-progress" id="ringProgress" cx="140" cy="140" r="130"
+            stroke-dasharray="816.81" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-center">
+          <div class="timer-state" id="timerState">&#9876; 準備完了</div>
+          <div class="timer-display" id="timerDisplay">25:00</div>
+          <div class="timer-session" id="timerSession">1 / 4</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls fade-in">
+      <button class="btn-main" id="startBtn">冒険に出る</button>
+      <button class="btn-sub" id="resetBtn">リセット</button>
+    </div>
+
+    <!-- Equipment -->
+    <div class="equipment-card pixel-card fade-in">
+      <div class="section-title">&#9876; 装備</div>
+      <div class="equip-grid">
+        <div class="equip-slot" id="weaponSlot">
+          <div class="equip-icon" id="weaponIcon"><span class="pixel-sword"></span></div>
+          <div class="equip-name" id="weaponName">木の剣</div>
+          <div class="equip-effect" id="weaponEffect">効果なし</div>
+        </div>
+        <div class="equip-slot" id="armorSlot">
+          <div class="equip-icon" id="armorIcon"><span class="pixel-shield"></span></div>
+          <div class="equip-name" id="armorName">旅人の服</div>
+          <div class="equip-effect" id="armorEffect">効果なし</div>
+        </div>
+      </div>
+      <button class="equip-change-btn" id="equipChangeBtn">装備を変更する</button>
+    </div>
+
+    <!-- Achievements -->
+    <div class="achievements-card pixel-card fade-in">
+      <div class="section-title">&#127942; 実績</div>
+      <div class="badge-scroll" id="badgeScroll">
+        <!-- badges inserted by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <h2>&#9881; 設定</h2>
+      <div class="setting-row">
+        <span class="setting-label">クエスト時間（分）</span>
+        <select class="setting-input" id="settingWork">
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="20">20</option>
+          <option value="25" selected>25</option>
+          <option value="30">30</option>
+          <option value="35">35</option>
+          <option value="40">40</option>
+          <option value="45">45</option>
+          <option value="50">50</option>
+          <option value="55">55</option>
+          <option value="60">60</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">休憩時間（分）</span>
+        <select class="setting-input" id="settingBreak">
+          <option value="5" selected>5</option>
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="20">20</option>
+          <option value="25">25</option>
+          <option value="30">30</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">効果音</span>
+        <label class="toggle">
+          <input type="checkbox" id="settingSound" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <button class="btn-danger" id="resetDataBtn">データをリセット</button>
+      <button class="btn-close-modal" id="closeSettingsBtn">閉じる</button>
+    </div>
+  </div>
+
+  <!-- Equipment Modal -->
+  <div class="equip-modal-overlay" id="equipModal">
+    <div class="equip-modal">
+      <h3>&#9876; 装備変更</h3>
+      <div id="equipModalContent"></div>
+      <button class="equip-modal-close" id="closeEquipBtn">決定</button>
+    </div>
+  </div>
+
+  <!-- Level up overlay -->
+  <div class="levelup-overlay" id="levelupOverlay">
+    <div class="levelup-text" id="levelupText">LEVEL UP!</div>
+    <div class="levelup-sub" id="levelupSub"></div>
+    <div class="levelup-new-equip" id="levelupEquip"></div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ==================== Stars Background ====================
+    (function createStars() {
+      var container = document.getElementById('stars');
+      var starData = [];
+      for (var i = 0; i < 30; i++) {
+        starData.push({
+          x: Math.random() * 100,
+          y: Math.random() * 100,
+          opacity: 0.3 + Math.random() * 0.5,
+          small: Math.random() > 0.5,
+          twinkle: Math.random() > 0.6
+        });
+      }
+      var html = '';
+      for (var j = 0; j < starData.length; j++) {
+        var s = starData[j];
+        var cls = 'star';
+        if (s.small) cls += ' small';
+        if (s.twinkle) cls += (Math.random() > 0.5 ? ' twinkle' : ' twinkle2');
+        html += '<div class="' + cls + '" style="left:' + s.x + '%;top:' + s.y + '%;opacity:' + s.opacity + '"></div>';
+      }
+      container.innerHTML = html;
+    })();
+
+    // ==================== Data ====================
+    var CIRCUMFERENCE = 2 * Math.PI * 130; // ~816.81
+
+    var TITLES = [
+      { minLv: 1, maxLv: 4, name: '見習い冒険者' },
+      { minLv: 5, maxLv: 9, name: '駆け出し冒険者' },
+      { minLv: 10, maxLv: 19, name: '一人前の冒険者' },
+      { minLv: 20, maxLv: 29, name: 'ベテラン冒険者' },
+      { minLv: 30, maxLv: 49, name: '英雄' },
+      { minLv: 50, maxLv: 999, name: '伝説の勇者' },
+    ];
+
+    var WEAPONS = [
+      { id: 'w0', name: '木の剣', icon: '\u{1F5E1}\uFE0F', effect: '効果なし', bonusExp: 0, unlockLv: 1 },
+      { id: 'w1', name: '鉄の剣', icon: '\u2694\uFE0F', effect: 'EXP +5', bonusExp: 5, unlockLv: 3 },
+      { id: 'w2', name: '炎の刃', icon: '\u{1F525}', effect: 'EXP +10', bonusExp: 10, unlockLv: 7 },
+      { id: 'w3', name: '雷鳴の大剣', icon: '\u26A1', effect: 'EXP +15', bonusExp: 15, unlockLv: 12 },
+      { id: 'w4', name: '星屑の聖剣', icon: '\u2728', effect: 'EXP +20', bonusExp: 20, unlockLv: 20 },
+      { id: 'w5', name: '虚空の魔剣', icon: '\u{1F300}', effect: 'EXP +30', bonusExp: 30, unlockLv: 35 },
+      { id: 'w6', name: '天命の神刀', icon: '\u{1F48E}', effect: 'EXP +50', bonusExp: 50, unlockLv: 50 },
+    ];
+
+    var ARMORS = [
+      { id: 'a0', name: '旅人の服', icon: '\u{1F455}', effect: '効果なし', breakBonus: 0, unlockLv: 1 },
+      { id: 'a1', name: '革のよろい', icon: '\u{1F6E1}\uFE0F', effect: '休憩 -30秒', breakBonus: -30, unlockLv: 5 },
+      { id: 'a2', name: '魔法のローブ', icon: '\u{1F9E5}', effect: '休憩 -1分', breakBonus: -60, unlockLv: 10 },
+      { id: 'a3', name: '風纏いの鎧', icon: '\u{1F30A}', effect: '休憩 -1分30秒', breakBonus: -90, unlockLv: 18 },
+      { id: 'a4', name: '竜鱗の聖鎧', icon: '\u{1F409}', effect: '休憩 -2分', breakBonus: -120, unlockLv: 28 },
+      { id: 'a5', name: '光輝の神鎧', icon: '\u{1F451}', effect: '休憩 -2分30秒', breakBonus: -150, unlockLv: 45 },
+    ];
+
+    var ACHIEVEMENTS = [
+      { id: 'first', name: '初クエスト', icon: '\u{1F31F}', desc: '初めてのクエスト達成', check: function(s){ return s.totalQuests >= 1; } },
+      { id: 'ten', name: '10クエスト', icon: '\u2694\uFE0F', desc: '10クエスト達成', check: function(s){ return s.totalQuests >= 10; } },
+      { id: 'lv10', name: 'Lv10到達', icon: '\u{1F3C5}', desc: 'レベル10に到達', check: function(s){ return s.level >= 10; } },
+      { id: 'daily5', name: '1日5回', icon: '\u{1F525}', desc: '1日に5クエスト達成', check: function(s){ return s.dailyQuests >= 5; } },
+      { id: 'streak3', name: '3日連続', icon: '\u{1F4C5}', desc: '3日連続ログイン', check: function(s){ return s.streak >= 3; } },
+    ];
+
+    // ==================== State ====================
+    var state = loadState();
+    var timerInterval = null;
+    var remainingSeconds = 0;
+    var totalSeconds = 0;
+    var isRunning = false;
+    var isPaused = false;
+    var isBreak = false;
+    var currentSession = 1;
+
+    function defaultState() {
+      return {
+        level: 1,
+        exp: 0,
+        totalQuests: 0,
+        dailyQuests: 0,
+        lastDate: getTodayStr(),
+        weaponId: 'w0',
+        armorId: 'a0',
+        achievements: [],
+        workMin: 25,
+        breakMin: 5,
+        soundOn: true,
+        streak: 1,
+        lastLoginDate: getTodayStr(),
+      };
+    }
+
+    function getTodayStr() {
+      var d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+
+    function loadState() {
+      try {
+        var raw = localStorage.getItem('questTimerState');
+        if (!raw) return defaultState();
+        var s = JSON.parse(raw);
+        // Check daily reset
+        var today = getTodayStr();
+        if (s.lastDate !== today) {
+          // Update streak
+          var yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          var yStr = yesterday.getFullYear() + '-' + String(yesterday.getMonth()+1).padStart(2,'0') + '-' + String(yesterday.getDate()).padStart(2,'0');
+          if (s.lastDate === yStr) {
+            s.streak = (s.streak || 1) + 1;
+          } else {
+            s.streak = 1;
+          }
+          s.dailyQuests = 0;
+          s.lastDate = today;
+          s.lastLoginDate = today;
+        }
+        var def = defaultState();
+        for (var key in def) {
+          if (!(key in s)) s[key] = def[key];
+        }
+        return s;
+      } catch(e) {
+        return defaultState();
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem('questTimerState', JSON.stringify(state));
+    }
+
+    // ==================== Sound (Web Audio API) ====================
+    var audioCtx = null;
+    function getAudioCtx() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      return audioCtx;
+    }
+
+    function playTone(freq, duration, type, gain) {
+      if (!type) type = 'sine';
+      if (!gain) gain = 0.15;
+      if (!state.soundOn) return;
+      try {
+        var ctx = getAudioCtx();
+        var osc = ctx.createOscillator();
+        var g = ctx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        g.gain.value = gain;
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + duration);
+      } catch(e) {}
+    }
+
+    function playStartSound() {
+      playTone(523, 0.15);
+      setTimeout(function(){ playTone(659, 0.15); }, 100);
+      setTimeout(function(){ playTone(784, 0.2); }, 200);
+    }
+
+    function playCompleteSound() {
+      playTone(523, 0.15);
+      setTimeout(function(){ playTone(659, 0.12); }, 120);
+      setTimeout(function(){ playTone(784, 0.12); }, 240);
+      setTimeout(function(){ playTone(1047, 0.3); }, 360);
+    }
+
+    function playLevelUpSound() {
+      var notes = [523, 587, 659, 784, 880, 1047];
+      notes.forEach(function(f, i) {
+        setTimeout(function(){ playTone(f, 0.2, 'square', 0.08); }, i * 80);
+      });
+    }
+
+    // ==================== UI Helpers ====================
+    function $(id) { return document.getElementById(id); }
+
+    function getTitle(lv) {
+      var t = TITLES.find(function(t){ return lv >= t.minLv && lv <= t.maxLv; });
+      return t ? t.name : '伝説の勇者';
+    }
+
+    function getWeapon(id) { return WEAPONS.find(function(w){ return w.id === id; }) || WEAPONS[0]; }
+    function getArmor(id) { return ARMORS.find(function(a){ return a.id === id; }) || ARMORS[0]; }
+
+    function getExpToNext(lv) {
+      return 100 + (lv - 1) * 20;
+    }
+
+    function updateStatusUI() {
+      var expMax = getExpToNext(state.level);
+      $('titleBadge').textContent = getTitle(state.level);
+      $('levelText').textContent = 'Lv.' + state.level;
+      $('expBar').style.width = Math.min(100, (state.exp / expMax) * 100) + '%';
+      $('expCurrent').textContent = state.exp;
+      $('expMax').textContent = expMax;
+      $('dailyCount').textContent = state.dailyQuests;
+      $('totalCount').textContent = state.totalQuests;
+
+      var w = getWeapon(state.weaponId);
+      var a = getArmor(state.armorId);
+      // Use pixel art for default equipment, emoji for others
+      if (w.id === 'w0') {
+        $('weaponIcon').innerHTML = '<span class="pixel-sword"></span>';
+      } else {
+        $('weaponIcon').textContent = w.icon;
+        $('weaponIcon').style.fontSize = '28px';
+      }
+      $('weaponName').textContent = w.name;
+      $('weaponEffect').textContent = w.effect;
+      $('weaponEffect').className = 'equip-effect' + (w.bonusExp > 0 ? ' active' : '');
+
+      if (a.id === 'a0') {
+        $('armorIcon').innerHTML = '<span class="pixel-shield"></span>';
+      } else {
+        $('armorIcon').textContent = a.icon;
+        $('armorIcon').style.fontSize = '28px';
+      }
+      $('armorName').textContent = a.name;
+      $('armorEffect').textContent = a.effect;
+      $('armorEffect').className = 'equip-effect' + (a.breakBonus !== 0 ? ' active' : '');
+
+      updateAchievements();
+    }
+
+    function updateTimerDisplay() {
+      var min = Math.floor(remainingSeconds / 60);
+      var sec = remainingSeconds % 60;
+      $('timerDisplay').textContent = String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+
+      // Ring progress
+      var progress = totalSeconds > 0 ? (totalSeconds - remainingSeconds) / totalSeconds : 0;
+      var offset = CIRCUMFERENCE * (1 - progress);
+      $('ringProgress').setAttribute('stroke-dashoffset', offset);
+      $('timerSession').textContent = currentSession + ' / 4';
+
+      // Update ring color based on mode
+      var ring = $('ringProgress');
+      if (isBreak) {
+        ring.classList.add('break-mode');
+      } else {
+        ring.classList.remove('break-mode');
+      }
+    }
+
+    function updateAchievements() {
+      var container = $('badgeScroll');
+      container.innerHTML = '';
+      ACHIEVEMENTS.forEach(function(a) {
+        var unlocked = state.achievements.includes(a.id);
+        var div = document.createElement('div');
+        div.className = 'badge-item';
+        div.innerHTML =
+          '<div class="badge-circle ' + (unlocked ? 'unlocked' : 'locked') + '">' +
+            (unlocked ? a.icon : '\u{1F512}') +
+          '</div>' +
+          '<div class="badge-label">' + a.name + '</div>';
+        container.appendChild(div);
+      });
+    }
+
+    function showToast(msg) {
+      var t = $('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(function(){ t.classList.remove('show'); }, 2500);
+    }
+
+    // ==================== Confetti (pixel style) ====================
+    function spawnConfetti() {
+      var colors = ['#ffd700', '#50c878', '#4a9eff', '#e74c3c', '#ff8c42'];
+      for (var i = 0; i < 40; i++) {
+        var el = document.createElement('div');
+        el.className = 'confetti-piece';
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.top = '-10px';
+        el.style.background = colors[Math.floor(Math.random() * colors.length)];
+        el.style.animationDuration = (1 + Math.random()) + 's';
+        el.style.animationDelay = (Math.random() * 0.5) + 's';
+        // Vary sizes for pixel feel
+        var size = (4 + Math.floor(Math.random() * 3) * 4) + 'px';
+        el.style.width = size;
+        el.style.height = size;
+        document.body.appendChild(el);
+        setTimeout(function(){ if(el.parentNode) el.remove(); }, 2500);
+      }
+    }
+
+    // ==================== Gold Flash ====================
+    function triggerGoldFlash() {
+      var overlay = $('flashOverlay');
+      overlay.classList.remove('gold-flash');
+      // Force reflow
+      void overlay.offsetWidth;
+      overlay.classList.add('gold-flash');
+      setTimeout(function(){ overlay.classList.remove('gold-flash'); }, 1000);
+    }
+
+    // ==================== Timer Logic ====================
+    function getEffectiveBreakSeconds() {
+      var armor = getArmor(state.armorId);
+      var base = state.breakMin * 60;
+      return Math.max(30, base + armor.breakBonus);
+    }
+
+    function updateTimerState(text, blink) {
+      var el = $('timerState');
+      el.textContent = text;
+      if (blink) {
+        el.classList.add('active');
+      } else {
+        el.classList.remove('active');
+      }
+    }
+
+    function startTimer() {
+      if (isRunning && !isPaused) {
+        // Pause
+        isPaused = true;
+        clearInterval(timerInterval);
+        stopBattleLoop();
+        $('startBtn').textContent = '再開する';
+        $('startBtn').classList.remove('running');
+        updateTimerState('\u2694 一時停止', false);
+        return;
+      }
+      if (isPaused) {
+        // Resume
+        isPaused = false;
+        $('startBtn').textContent = isBreak ? '休憩中...' : '一時停止';
+        $('startBtn').classList.add('running');
+        updateTimerState(isBreak ? '\u{1F3D5}\uFE0F セーブポイント' : '\u2694\uFE0F クエスト進行中...', !isBreak);
+        if (!isBreak) startBattleLoop();
+        timerInterval = setInterval(tick, 1000);
+        return;
+      }
+      // Fresh start
+      isRunning = true;
+      isPaused = false;
+      isBreak = false;
+      totalSeconds = state.workMin * 60;
+      remainingSeconds = totalSeconds;
+      currentSession = 1;
+      $('startBtn').textContent = '一時停止';
+      $('startBtn').classList.add('running');
+      updateTimerState('\u2694\uFE0F クエスト進行中...', true);
+      updateTimerDisplay();
+      playStartSound();
+      battleOnStart();
+      timerInterval = setInterval(tick, 1000);
+    }
+
+    function tick() {
+      remainingSeconds--;
+      if (remainingSeconds < 0) remainingSeconds = 0;
+      updateTimerDisplay();
+
+      if (remainingSeconds <= 0) {
+        clearInterval(timerInterval);
+        if (!isBreak) {
+          completeQuest();
+        } else {
+          finishBreak();
+        }
+      }
+    }
+
+    function completeQuest() {
+      playCompleteSound();
+      triggerGoldFlash();
+      // Add glow effect
+      $('timerCard').classList.add('glow');
+      setTimeout(function(){ $('timerCard').classList.remove('glow'); }, 1200);
+
+      updateTimerState('\u{1F389} QUEST COMPLETE!', false);
+      battleOnQuestComplete();
+
+      // Calculate EXP
+      var weapon = getWeapon(state.weaponId);
+      var earnedExp = 25 + weapon.bonusExp;
+
+      // Daily bonus
+      if (state.dailyQuests === 0) {
+        earnedExp += 10;
+        showToast('デイリーボーナス +10 EXP!');
+      }
+
+      state.dailyQuests++;
+      state.totalQuests++;
+      state.exp += earnedExp;
+
+      // Level up check
+      var leveledUp = false;
+      var expToNext = getExpToNext(state.level);
+      while (state.exp >= expToNext) {
+        state.exp -= expToNext;
+        state.level++;
+        leveledUp = true;
+        expToNext = getExpToNext(state.level);
+      }
+
+      // Achievement check
+      checkAchievements();
+      saveState();
+      updateStatusUI();
+
+      if (leveledUp) {
+        showLevelUp();
+      } else {
+        showToast('クエスト完了! +' + earnedExp + ' EXP');
+      }
+
+      // Move to break or finish cycle
+      if (currentSession < 4) {
+        startBreak();
+      } else {
+        finishCycle();
+      }
+    }
+
+    function startBreak() {
+      isBreak = true;
+      totalSeconds = getEffectiveBreakSeconds();
+      remainingSeconds = totalSeconds;
+      updateTimerState('\u{1F3D5}\uFE0F セーブポイント', false);
+      $('startBtn').textContent = '休憩中...';
+      updateTimerDisplay();
+      battleOnBreakStart();
+      timerInterval = setInterval(tick, 1000);
+    }
+
+    function finishBreak() {
+      isBreak = false;
+      currentSession++;
+      totalSeconds = state.workMin * 60;
+      remainingSeconds = totalSeconds;
+      updateTimerState('\u2694\uFE0F クエスト進行中...', true);
+      $('startBtn').textContent = '一時停止';
+      updateTimerDisplay();
+      playStartSound();
+      battleOnBreakEnd();
+      timerInterval = setInterval(tick, 1000);
+    }
+
+    function finishCycle() {
+      isRunning = false;
+      isPaused = false;
+      isBreak = false;
+      currentSession = 1;
+      totalSeconds = state.workMin * 60;
+      remainingSeconds = totalSeconds;
+      $('startBtn').textContent = '冒険に出る';
+      $('startBtn').classList.remove('running');
+      updateTimerState('\u2694 準備完了', false);
+      updateTimerDisplay();
+      battleOnReset();
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      isRunning = false;
+      isPaused = false;
+      isBreak = false;
+      currentSession = 1;
+      totalSeconds = state.workMin * 60;
+      remainingSeconds = totalSeconds;
+      $('startBtn').textContent = '冒険に出る';
+      $('startBtn').classList.remove('running');
+      updateTimerState('\u2694 準備完了', false);
+      updateTimerDisplay();
+      battleOnReset();
+    }
+
+    // ==================== Level Up ====================
+    function showLevelUp() {
+      playLevelUpSound();
+      spawnConfetti();
+      $('levelupText').textContent = 'LEVEL UP!  Lv.' + state.level;
+      $('levelupSub').textContent = getTitle(state.level);
+
+      // Check new equipment unlocked
+      var newWeapons = WEAPONS.filter(function(w){ return w.unlockLv === state.level; });
+      var newArmors = ARMORS.filter(function(a){ return a.unlockLv === state.level; });
+      var newItems = newWeapons.concat(newArmors);
+      if (newItems.length > 0) {
+        $('levelupEquip').textContent = '新装備解放: ' + newItems.map(function(i){ return i.icon + ' ' + i.name; }).join('、');
+      } else {
+        $('levelupEquip').textContent = '';
+      }
+
+      $('levelupOverlay').classList.add('show');
+      setTimeout(function(){ $('levelupOverlay').classList.remove('show'); }, 2800);
+    }
+
+    // ==================== Achievements ====================
+    function checkAchievements() {
+      var newUnlocks = [];
+      ACHIEVEMENTS.forEach(function(a) {
+        if (!state.achievements.includes(a.id) && a.check(state)) {
+          state.achievements.push(a.id);
+          newUnlocks.push(a);
+        }
+      });
+      newUnlocks.forEach(function(a) {
+        setTimeout(function(){ showToast('実績解放: ' + a.icon + ' ' + a.name); }, 1500);
+      });
+    }
+
+    // ==================== Equipment Modal ====================
+    function openEquipModal() {
+      var content = $('equipModalContent');
+      content.innerHTML = '';
+
+      // Weapons
+      var wCat = document.createElement('div');
+      wCat.className = 'equip-category';
+      wCat.innerHTML = '<div class="equip-category-title">武器</div>';
+      WEAPONS.forEach(function(w) {
+        var unlocked = state.level >= w.unlockLv;
+        var selected = state.weaponId === w.id;
+        var opt = document.createElement('div');
+        opt.className = 'equip-option' + (selected ? ' selected' : '') + (!unlocked ? ' locked' : '');
+        opt.innerHTML =
+          '<span class="equip-option-icon">' + w.icon + '</span>' +
+          '<div class="equip-option-info">' +
+            '<div class="equip-option-name">' + w.name + '</div>' +
+            '<div class="equip-option-effect">' + w.effect + '</div>' +
+            (!unlocked ? '<div class="equip-option-unlock">Lv.' + w.unlockLv + 'で解放</div>' : '') +
+          '</div>';
+        if (unlocked) {
+          (function(ww) {
+            opt.addEventListener('click', function() {
+              state.weaponId = ww.id;
+              saveState();
+              updateStatusUI();
+              openEquipModal();
+            });
+          })(w);
+        }
+        wCat.appendChild(opt);
+      });
+      content.appendChild(wCat);
+
+      // Armors
+      var aCat = document.createElement('div');
+      aCat.className = 'equip-category';
+      aCat.innerHTML = '<div class="equip-category-title">防具</div>';
+      ARMORS.forEach(function(a) {
+        var unlocked = state.level >= a.unlockLv;
+        var selected = state.armorId === a.id;
+        var opt = document.createElement('div');
+        opt.className = 'equip-option' + (selected ? ' selected' : '') + (!unlocked ? ' locked' : '');
+        opt.innerHTML =
+          '<span class="equip-option-icon">' + a.icon + '</span>' +
+          '<div class="equip-option-info">' +
+            '<div class="equip-option-name">' + a.name + '</div>' +
+            '<div class="equip-option-effect">' + a.effect + '</div>' +
+            (!unlocked ? '<div class="equip-option-unlock">Lv.' + a.unlockLv + 'で解放</div>' : '') +
+          '</div>';
+        if (unlocked) {
+          (function(aa) {
+            opt.addEventListener('click', function() {
+              state.armorId = aa.id;
+              saveState();
+              updateStatusUI();
+              openEquipModal();
+            });
+          })(a);
+        }
+        aCat.appendChild(opt);
+      });
+      content.appendChild(aCat);
+
+      $('equipModal').classList.add('show');
+    }
+
+    // ==================== Settings Modal ====================
+    function openSettings() {
+      $('settingWork').value = state.workMin;
+      $('settingBreak').value = state.breakMin;
+      $('settingSound').checked = state.soundOn;
+      $('settingsModal').classList.add('show');
+    }
+
+    function closeSettings() {
+      var wm = parseInt($('settingWork').value, 10);
+      var bm = parseInt($('settingBreak').value, 10);
+      if (isNaN(wm) || wm < 1) wm = 1;
+      if (wm > 120) wm = 120;
+      if (isNaN(bm) || bm < 1) bm = 1;
+      if (bm > 30) bm = 30;
+      state.workMin = wm;
+      state.breakMin = bm;
+      state.soundOn = $('settingSound').checked;
+      saveState();
+      // Update timer if not running
+      if (!isRunning) {
+        totalSeconds = state.workMin * 60;
+        remainingSeconds = totalSeconds;
+        updateTimerDisplay();
+      }
+      $('settingsModal').classList.remove('show');
+    }
+
+    function resetAllData() {
+      if (!confirm('全てのデータをリセットしますか？\nレベル・装備・実績が全て初期化されます。')) return;
+      localStorage.removeItem('questTimerState');
+      state = defaultState();
+      saveState();
+      resetTimer();
+      updateStatusUI();
+      $('settingsModal').classList.remove('show');
+      showToast('データをリセットしました');
+    }
+
+    // ==================== Events ====================
+    $('startBtn').addEventListener('click', startTimer);
+    $('resetBtn').addEventListener('click', resetTimer);
+    $('settingsBtn').addEventListener('click', openSettings);
+    $('closeSettingsBtn').addEventListener('click', closeSettings);
+    $('resetDataBtn').addEventListener('click', resetAllData);
+    $('equipChangeBtn').addEventListener('click', openEquipModal);
+    $('closeEquipBtn').addEventListener('click', function(){ $('equipModal').classList.remove('show'); });
+
+    // Close modals on overlay click
+    $('settingsModal').addEventListener('click', function(e) {
+      if (e.target === $('settingsModal')) closeSettings();
+    });
+    $('equipModal').addEventListener('click', function(e) {
+      if (e.target === $('equipModal')) $('equipModal').classList.remove('show');
+    });
+    $('levelupOverlay').addEventListener('click', function() {
+      $('levelupOverlay').classList.remove('show');
+    });
+
+    // ==================== Battle Animation System ====================
+    var MONSTERS = [
+      { id: 'slime', cls: 'monster-slime', name: 'スライム' },
+      { id: 'bat', cls: 'monster-bat', name: 'コウモリ' },
+      { id: 'golem', cls: 'monster-golem', name: 'ゴーレム' },
+      { id: 'dragon', cls: 'monster-dragon', name: 'ドラゴン' },
+    ];
+    var BATTLE_MSGS_PROGRESS = [
+      '勇者の攻撃！',
+      'モンスターがにらんでいる...',
+      '集中力が高まっている！',
+      '鋭い一撃！',
+      'モンスターが身構えた！',
+      '気合が入っている！',
+    ];
+
+    var currentMonster = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
+    var battleAttackTimer = null;
+    var battleMsgTimer = null;
+
+    function setMonsterSprite(monsterObj) {
+      var sprite = $('monsterSprite');
+      sprite.className = 'battle-monster ' + monsterObj.cls;
+    }
+
+    function setBattleMsg(msg) {
+      $('battleMsg').textContent = msg;
+    }
+
+    function spawnNewMonster() {
+      var prev = currentMonster;
+      do {
+        currentMonster = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
+      } while (MONSTERS.length > 1 && currentMonster.id === prev.id);
+      setMonsterSprite(currentMonster);
+      var wrap = $('monsterWrap');
+      wrap.style.display = '';
+      wrap.className = 'battle-monster-wrap appear';
+      setTimeout(function() {
+        wrap.className = 'battle-monster-wrap idle';
+      }, 800);
+    }
+
+    function showDamageNumber() {
+      var arena = $('battleArena');
+      var mWrap = $('monsterWrap');
+      var el = document.createElement('div');
+      el.className = 'damage-num';
+      var dmg = Math.floor(Math.random() * 20) + 5;
+      el.textContent = '-' + dmg;
+      // Position near monster
+      var rect = mWrap.getBoundingClientRect();
+      var arenaRect = arena.getBoundingClientRect();
+      el.style.right = (arenaRect.right - rect.right + 10) + 'px';
+      el.style.top = (rect.top - arenaRect.top - 10) + 'px';
+      el.style.position = 'absolute';
+      el.style.right = '15%';
+      el.style.top = '25%';
+      arena.appendChild(el);
+      setTimeout(function() { if (el.parentNode) el.remove(); }, 900);
+    }
+
+    function doAttackAnimation() {
+      var heroW = $('heroWrap');
+      var monsterW = $('monsterWrap');
+      // Hero attacks
+      heroW.className = 'battle-hero-wrap attack';
+      setBattleMsg('勇者の攻撃！');
+      setTimeout(function() {
+        // Monster gets hit
+        monsterW.className = 'battle-monster-wrap hit';
+        showDamageNumber();
+        playTone(200, 0.1, 'square', 0.06);
+      }, 200);
+      setTimeout(function() {
+        heroW.className = 'battle-hero-wrap idle';
+        monsterW.className = 'battle-monster-wrap idle';
+        // Random message after attack
+        var msgs = BATTLE_MSGS_PROGRESS;
+        setBattleMsg(msgs[Math.floor(Math.random() * msgs.length)]);
+      }, 800);
+    }
+
+    function startBattleLoop() {
+      stopBattleLoop();
+      // Show battle scene elements
+      $('monsterWrap').style.display = '';
+      $('campfireWrap').classList.remove('show');
+      $('heroSprite').classList.remove('resting');
+      $('heroWrap').className = 'battle-hero-wrap idle';
+      $('monsterWrap').className = 'battle-monster-wrap idle';
+      // Attack every 30 seconds
+      battleAttackTimer = setInterval(doAttackAnimation, 30000);
+      // Rotate battle messages every 15 seconds
+      battleMsgTimer = setInterval(function() {
+        var msgs = BATTLE_MSGS_PROGRESS;
+        setBattleMsg(msgs[Math.floor(Math.random() * msgs.length)]);
+      }, 15000);
+    }
+
+    function stopBattleLoop() {
+      if (battleAttackTimer) { clearInterval(battleAttackTimer); battleAttackTimer = null; }
+      if (battleMsgTimer) { clearInterval(battleMsgTimer); battleMsgTimer = null; }
+    }
+
+    function battleOnStart() {
+      // New monster for new quest cycle
+      spawnNewMonster();
+      setBattleMsg(currentMonster.name + 'が現れた！');
+      setTimeout(function() { startBattleLoop(); }, 1200);
+    }
+
+    function battleOnQuestComplete() {
+      stopBattleLoop();
+      var heroW = $('heroWrap');
+      var monsterW = $('monsterWrap');
+      // Final attack
+      heroW.className = 'battle-hero-wrap attack';
+      setTimeout(function() {
+        monsterW.className = 'battle-monster-wrap defeat';
+        showDamageNumber();
+        playTone(200, 0.1, 'square', 0.06);
+      }, 200);
+      setTimeout(function() {
+        heroW.className = 'battle-hero-wrap victory';
+        // Show victory text
+        var vt = $('victoryText');
+        var weapon = getWeapon(state.weaponId);
+        var earnedExp = 25 + weapon.bonusExp;
+        vt.textContent = currentMonster.name + 'を倒した！ +' + earnedExp + ' EXP';
+        vt.classList.add('show');
+        setBattleMsg(currentMonster.name + 'を倒した！ +' + earnedExp + ' EXP');
+      }, 800);
+      setTimeout(function() {
+        $('victoryText').classList.remove('show');
+        heroW.className = 'battle-hero-wrap idle';
+      }, 2500);
+    }
+
+    function battleOnBreakStart() {
+      stopBattleLoop();
+      // Switch to campfire scene
+      $('monsterWrap').style.display = 'none';
+      $('campfireWrap').classList.add('show');
+      $('heroSprite').classList.add('resting');
+      $('heroWrap').className = 'battle-hero-wrap idle';
+      setBattleMsg('セーブポイントで休憩中...');
+    }
+
+    function battleOnBreakEnd() {
+      // Return to battle
+      $('campfireWrap').classList.remove('show');
+      $('heroSprite').classList.remove('resting');
+      spawnNewMonster();
+      setBattleMsg(currentMonster.name + 'が現れた！');
+      setTimeout(function() { startBattleLoop(); }, 1200);
+    }
+
+    function battleOnReset() {
+      stopBattleLoop();
+      $('campfireWrap').classList.remove('show');
+      $('heroSprite').classList.remove('resting');
+      $('heroWrap').className = 'battle-hero-wrap idle';
+      $('monsterWrap').style.display = '';
+      $('monsterWrap').className = 'battle-monster-wrap idle';
+      setBattleMsg('モンスターが現れた！');
+    }
+
+    // ==================== Init ====================
+    function init() {
+      $('ringProgress').setAttribute('stroke-dasharray', CIRCUMFERENCE);
+      totalSeconds = state.workMin * 60;
+      remainingSeconds = totalSeconds;
+      updateTimerDisplay();
+      updateStatusUI();
+
+      // Initialize battle scene with random monster
+      setMonsterSprite(currentMonster);
+      setBattleMsg(currentMonster.name + 'が現れた！');
+
+      // Check for daily login streak
+      checkAchievements();
+      saveState();
+    }
+
+    init();
+  </script>
+</body>
+</html>
